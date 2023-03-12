@@ -5,8 +5,9 @@ server:
     # 设置session的过期时间
     session:
       timeout: 86400
-
-
+  # 设置全局的请求路径前缀
+  servlet:
+    context-path: /api
 
 spring:
   #配置数据源

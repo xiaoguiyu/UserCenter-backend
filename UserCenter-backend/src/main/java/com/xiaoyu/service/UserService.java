@@ -23,7 +23,7 @@ public interface UserService extends IService<User> {
      * @param checkPassword 校验密码
      * @return 用户的id
      */
-    long register(String userAccount, String userPassword, String checkPassword);
+    long register(String userAccount, String userPassword, String checkPassword, String planetCode);
 
 
     /**
@@ -34,6 +34,12 @@ public interface UserService extends IService<User> {
      * @return 脱敏后的用户信息
      */
     User userLogin(String userAccount, String userPassword, HttpServletRequest request);
+
+    /**
+     * 用户注销
+     * @return 返回注销是否成功的状态码
+     */
+    int userLogout(HttpServletRequest request);
 
     /**
      * 对用户信息进行脱敏

@@ -2,6 +2,8 @@ package com.xiaoyu.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xiaoyu.common.ErrorCode;
+import com.xiaoyu.exception.CustomException;
 import com.xiaoyu.model.domain.User;
 import com.xiaoyu.service.UserService;
 import com.xiaoyu.mapper.UserMapper;
@@ -26,6 +28,7 @@ import static com.xiaoyu.constant.UserConstant.USER_LOGIN_STATE;
 
 @Slf4j
 @Service
+@SuppressWarnings("all")
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService{
 
     @Resource
@@ -38,32 +41,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private static final String SALT = "xiaoyu";
 
 
-
-
-
     @Override
-    public long register(String userAccount, String userPassword, String checkPassword) {
+    public long register(String userAccount, String userPassword, String checkPassword, String planetCode) {
 
         // 用户账号 密码  校验密码 的非空判断
-        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
-            return -1;
+        // todo 封装全局的异常处理类
+        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, planetCode)) {
+            throw new CustomException(ErrorCode.NULL_ERROR, "用户的参数为空");
         }
         if (userAccount.length() < 4) {
-            return -1;
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "用户账号小于4位!");
         }
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
-            return -1;
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "用户密码太短");
+        }
+        if (planetCode.length() > 5) {
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "星球编号过长!");
         }
 
         // 使用正则来匹配 特殊字符, 如果账号存在特殊字符,
         String validPattern = "[`~!@#$%^&*()+=|{}':;',//[//].<>/?~ ！ @# ￥ %……&* （）——+|{} 【】‘；： ”“’。，、？]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
-            return -1;
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "用户账号存在特殊字符");
         }
 
         if (!userPassword.equals(checkPassword)) {
-            return -1;
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "用户密码两次不一致");
         }
 
         // 对密码进行加密
@@ -72,19 +76,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.eq("userAccount", userAccount);
         // 用户账号是否重复
-        if (userMapper.selectCount(userQueryWrapper) > 0) {
-            return -1;
+        if (userMapper.selectCount(userQueryWrapper) > 0 ) {
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "用户账号重复");
         }
+
+        // 用户的星球编号是否重复
+        userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.eq("planetCode", planetCode);
+        // 星球编号是否重复
+        if (userMapper.selectCount(userQueryWrapper) > 0 ) {
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "用户星球编号重复!");
+        }
+
 
         // 插入数据
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
+        user.setPlanetCode(planetCode);
         boolean result = this.save(user);
         if (!result) {
-            return -1;
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "插入数据失败!");
         }
-
         return user.getId();
     }
 
@@ -92,21 +105,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User userLogin(String userAccount, String userPassword, HttpServletRequest request) {
 
         // 用户账号 密码  校验密码 的非空判断
+        // todo 封装全局的状态信息码
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
-            return null;
+            throw new CustomException(ErrorCode.NULL_ERROR, "用户的参数为空");
         }
         if (userAccount.length() < 4) {
-            return null;
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "用户账号小于4位");
         }
         if (userPassword.length() < 8) {
-            return null;
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "用户密码小于8位!");
         }
 
         // 使用正则来匹配 特殊字符, 如果账号存在特殊字符, 返回null
         String validPattern = "[`~!@#$%^&*()+=|{}':;',//[//].<>/?~ ！ @# ￥ %……&* （）——+|{} 【】‘；： ”“’。，、？]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
-            return null;
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "用户账号存在特殊符号");
         }
 
         // 对用户输入的密码进行加密
@@ -119,13 +133,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = userMapper.selectOne(userQueryWrapper);
         if (user == null) {
             log.info(" user login failed, userAccount  cannot match userPassword ! ");
-            return null;
+            throw new CustomException(ErrorCode.PARAMS_ERROR, "账号和密码不匹配!");
         }
 
         User safetyUser = getSafetyUser(user);
         // 保存session
         request.getSession().setAttribute(USER_LOGIN_STATE, safetyUser);
         return safetyUser;
+    }
+
+    @Override
+    public int userLogout(HttpServletRequest request) {
+
+        request.getSession().removeAttribute(USER_LOGIN_STATE);
+        return 1;
     }
 
     /**
@@ -135,6 +156,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     public User getSafetyUser(User originUser) {
+
+        if (originUser == null) {
+            throw new CustomException(ErrorCode.NULL_ERROR, "user为null");
+        }
 
         User safetyUser = new User();
         safetyUser.setId(originUser.getId());
@@ -147,12 +172,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         safetyUser.setUserStatus(originUser.getUserStatus());
         safetyUser.setCreateTime(originUser.getCreateTime());
         safetyUser.setUserRole(originUser.getUserRole());
+        safetyUser.setPlanetCode(originUser.getPlanetCode());
         return safetyUser;
     }
-
-
-
-
 
 }
 

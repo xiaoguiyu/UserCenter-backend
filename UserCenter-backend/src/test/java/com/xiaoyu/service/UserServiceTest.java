@@ -47,28 +47,29 @@ public class UserServiceTest {
         String userAccount = "";
         String userPassword = "";
         String checkPassword = "";
-        long result = userService.register(userAccount, userPassword, checkPassword);
+        String planetCode = "1";
+        long result = userService.register(userAccount, userPassword, checkPassword, planetCode);
         Assertions.assertEquals(-1, result);  // 断言
 
         // 账号长度判断
         userAccount = "xia";
         userPassword = "123456";
         checkPassword = "123456";
-        result = userService.register(userAccount, userPassword, checkPassword);
+        result = userService.register(userAccount, userPassword, checkPassword, planetCode);
         Assertions.assertEquals(-1, result);
 
         // 相同账号测试
         userAccount = "xiaoyu";
         userPassword = "123456789";
         checkPassword = "123456789";
-        result = userService.register(userAccount, userPassword, checkPassword);
+        result = userService.register(userAccount, userPassword, checkPassword, planetCode);
         Assertions.assertEquals(-1, result);
 
         // 特殊符号测试
         userAccount = ".1234567788";
         userPassword = "xiaoyu12345";
         checkPassword = "xiaoyu12345";
-        result = userService.register(userAccount, userPassword, checkPassword);
+        result = userService.register(userAccount, userPassword, checkPassword, planetCode);
         Assertions.assertEquals(-1, result);
 
 
@@ -76,7 +77,7 @@ public class UserServiceTest {
         userAccount = "xiaoyu1234";
         userPassword = "xiaoyu12345";
         checkPassword = "xiaoyu123";
-        result = userService.register(userAccount, userPassword, checkPassword);
+        result = userService.register(userAccount, userPassword, checkPassword, planetCode);
         Assertions.assertEquals(-1, result);
 
 
@@ -84,7 +85,7 @@ public class UserServiceTest {
         userAccount = "xiaoyu123";
         userPassword = "xiaoyu666";
         checkPassword = "xiaoyu666";
-        result = userService.register(userAccount, userPassword, checkPassword);
+        result = userService.register(userAccount, userPassword, checkPassword, planetCode);
         Assertions.assertTrue(result > 0);
 
     }

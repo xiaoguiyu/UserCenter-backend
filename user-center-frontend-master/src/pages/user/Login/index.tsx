@@ -1,14 +1,7 @@
-import {
-  AlipayCircleOutlined,
-  LockOutlined,
-  MobileOutlined,
-  TaobaoCircleOutlined,
-  UserOutlined,
-  WeiboCircleOutlined,
-} from '@ant-design/icons';
-import {Alert, Button, Divider, message, Space, Tabs} from 'antd';
+import {LockOutlined, UserOutlined,} from '@ant-design/icons';
+import {Alert, Divider, message, Space, Tabs} from 'antd';
 import React, {useState} from 'react';
-import {ProFormCaptcha, ProFormCheckbox, ProFormText, LoginForm} from '@ant-design/pro-form';
+import {LoginForm, ProFormCheckbox, ProFormText} from '@ant-design/pro-form';
 import {history, useModel} from 'umi';
 import {PLANET_LINK, SYSTEM_LOGO} from '@/constants';
 import Footer from '@/components/Footer';
